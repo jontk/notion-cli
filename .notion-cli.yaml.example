@@ -1,0 +1,13 @@
+# Example configuration file for notion-cli
+# Copy this to ~/.notion-cli.yaml and fill in your values
+
+# Your Notion integration token
+# Get it from: https://www.notion.so/my-integrations
+api_token: "secret_your_integration_token_here"
+
+# Your default database ID (optional)
+# You can find this in the database URL: https://notion.so/workspace/DATABASE_ID?v=...
+database_id: "your-database-id-here"
+
+# Default status for new posts
+default_status: "Draft"

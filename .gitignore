@@ -1,0 +1,34 @@
+# Binaries
+notion-cli
+notion-cli-*
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binaries
+*.test
+*.out
+
+# Coverage
+coverage.txt
+*.coverprofile
+
+# Go workspace
+go.work
+go.work.sum
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Config files (should not be committed)
+.notion-cli.yaml
+config.yaml
