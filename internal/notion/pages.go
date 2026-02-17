@@ -18,51 +18,83 @@ func parseDate(dateStr string) time.Time {
 	return t
 }
 
+// richText builds a Notion rich text slice from a plain string
+func richText(content string) []notionapi.RichText {
+	return []notionapi.RichText{
+		{Text: &notionapi.Text{Content: content}},
+	}
+}
+
+// dateProperty builds a Notion date property from a YYYY-MM-DD string
+func dateProperty(dateStr string) notionapi.DateProperty {
+	t := parseDate(dateStr)
+	d := notionapi.Date(t)
+	return notionapi.DateProperty{
+		Date: &notionapi.DateObject{Start: &d},
+	}
+}
+
+// multiSelect builds a Notion multi-select property from a string slice
+func multiSelect(values []string) notionapi.MultiSelectProperty {
+	opts := make([]notionapi.Option, 0, len(values))
+	for _, v := range values {
+		opts = append(opts, notionapi.Option{Name: v})
+	}
+	return notionapi.MultiSelectProperty{MultiSelect: opts}
+}
+
 // CreatePost creates a new post in the Notion database
 func (c *Client) CreatePost(ctx context.Context, input models.PostInput, databaseID string) (*models.Post, error) {
 	properties := notionapi.Properties{
-		"Name": notionapi.TitleProperty{
-			Title: []notionapi.RichText{
-				{
-					Text: &notionapi.Text{
-						Content: input.Title,
-					},
-				},
-			},
+		"Title": notionapi.TitleProperty{
+			Title: richText(input.Title),
 		},
 	}
 
-	// Add status if provided
 	if input.Status != "" {
 		properties["Status"] = notionapi.StatusProperty{
-			Status: notionapi.Status{
-				Name: input.Status,
-			},
+			Status: notionapi.Status{Name: input.Status},
 		}
 	}
-
-	// Add platforms if provided
-	if len(input.Platforms) > 0 {
-		multiSelect := make([]notionapi.Option, 0, len(input.Platforms))
-		for _, platform := range input.Platforms {
-			multiSelect = append(multiSelect, notionapi.Option{
-				Name: platform,
-			})
-		}
-		properties["Platforms"] = notionapi.MultiSelectProperty{
-			MultiSelect: multiSelect,
+	if input.Week > 0 {
+		properties["Week"] = notionapi.NumberProperty{
+			Number: float64(input.Week),
 		}
 	}
-
-	// Add publish date if provided
+	if input.Pillar != "" {
+		properties["Pillar"] = notionapi.SelectProperty{
+			Select: notionapi.Option{Name: input.Pillar},
+		}
+	}
 	if input.PublishDate != "" {
-		t := parseDate(input.PublishDate)
-		date := notionapi.Date(t)
-		properties["Publish Date"] = notionapi.DateProperty{
-			Date: &notionapi.DateObject{
-				Start: &date,
-			},
-		}
+		properties["Publish Date"] = dateProperty(input.PublishDate)
+	}
+	if input.PublishedDate != "" {
+		properties["Published Date"] = dateProperty(input.PublishedDate)
+	}
+	if input.BlogURL != "" {
+		properties["Blog URL"] = notionapi.URLProperty{URL: input.BlogURL}
+	}
+	if len(input.DistributedTo) > 0 {
+		properties["Distributed To"] = multiSelect(input.DistributedTo)
+	}
+	if input.DistributedDate != "" {
+		properties["Distributed Date"] = dateProperty(input.DistributedDate)
+	}
+	if input.LinkedInDraft != "" {
+		properties["LinkedIn Draft"] = notionapi.RichTextProperty{RichText: richText(input.LinkedInDraft)}
+	}
+	if input.TwitterThread != "" {
+		properties["Twitter Thread"] = notionapi.RichTextProperty{RichText: richText(input.TwitterThread)}
+	}
+	if input.HNTitle != "" {
+		properties["HN Title"] = notionapi.RichTextProperty{RichText: richText(input.HNTitle)}
+	}
+	if input.RedditTitle != "" {
+		properties["Reddit Title"] = notionapi.RichTextProperty{RichText: richText(input.RedditTitle)}
+	}
+	if len(input.Hashtags) > 0 {
+		properties["Hashtags"] = multiSelect(input.Hashtags)
 	}
 
 	req := &notionapi.PageCreateRequest{
@@ -73,7 +105,6 @@ func (c *Client) CreatePost(ctx context.Context, input models.PostInput, databas
 		Properties: properties,
 	}
 
-	// Add content as children blocks if provided
 	if input.Content != "" {
 		req.Children = contentToBlocks(input.Content)
 	}
@@ -100,47 +131,55 @@ func (c *Client) GetPost(ctx context.Context, pageID string) (*models.Post, erro
 func (c *Client) UpdatePost(ctx context.Context, pageID string, input models.PostInput) (*models.Post, error) {
 	properties := notionapi.Properties{}
 
-	// Only update provided fields
 	if input.Title != "" {
-		properties["Name"] = notionapi.TitleProperty{
-			Title: []notionapi.RichText{
-				{
-					Text: &notionapi.Text{
-						Content: input.Title,
-					},
-				},
-			},
+		properties["Title"] = notionapi.TitleProperty{
+			Title: richText(input.Title),
 		}
 	}
-
 	if input.Status != "" {
 		properties["Status"] = notionapi.StatusProperty{
-			Status: notionapi.Status{
-				Name: input.Status,
-			},
+			Status: notionapi.Status{Name: input.Status},
 		}
 	}
-
-	if len(input.Platforms) > 0 {
-		multiSelect := make([]notionapi.Option, 0, len(input.Platforms))
-		for _, platform := range input.Platforms {
-			multiSelect = append(multiSelect, notionapi.Option{
-				Name: platform,
-			})
-		}
-		properties["Platforms"] = notionapi.MultiSelectProperty{
-			MultiSelect: multiSelect,
+	if input.Week > 0 {
+		properties["Week"] = notionapi.NumberProperty{
+			Number: float64(input.Week),
 		}
 	}
-
+	if input.Pillar != "" {
+		properties["Pillar"] = notionapi.SelectProperty{
+			Select: notionapi.Option{Name: input.Pillar},
+		}
+	}
 	if input.PublishDate != "" {
-		t := parseDate(input.PublishDate)
-		date := notionapi.Date(t)
-		properties["Publish Date"] = notionapi.DateProperty{
-			Date: &notionapi.DateObject{
-				Start: &date,
-			},
-		}
+		properties["Publish Date"] = dateProperty(input.PublishDate)
+	}
+	if input.PublishedDate != "" {
+		properties["Published Date"] = dateProperty(input.PublishedDate)
+	}
+	if input.BlogURL != "" {
+		properties["Blog URL"] = notionapi.URLProperty{URL: input.BlogURL}
+	}
+	if len(input.DistributedTo) > 0 {
+		properties["Distributed To"] = multiSelect(input.DistributedTo)
+	}
+	if input.DistributedDate != "" {
+		properties["Distributed Date"] = dateProperty(input.DistributedDate)
+	}
+	if input.LinkedInDraft != "" {
+		properties["LinkedIn Draft"] = notionapi.RichTextProperty{RichText: richText(input.LinkedInDraft)}
+	}
+	if input.TwitterThread != "" {
+		properties["Twitter Thread"] = notionapi.RichTextProperty{RichText: richText(input.TwitterThread)}
+	}
+	if input.HNTitle != "" {
+		properties["HN Title"] = notionapi.RichTextProperty{RichText: richText(input.HNTitle)}
+	}
+	if input.RedditTitle != "" {
+		properties["Reddit Title"] = notionapi.RichTextProperty{RichText: richText(input.RedditTitle)}
+	}
+	if len(input.Hashtags) > 0 {
+		properties["Hashtags"] = multiSelect(input.Hashtags)
 	}
 
 	req := &notionapi.PageUpdateRequest{
@@ -152,7 +191,6 @@ func (c *Client) UpdatePost(ctx context.Context, pageID string, input models.Pos
 		return nil, fmt.Errorf("failed to update page: %w", err)
 	}
 
-	// Append content blocks if provided
 	if input.Content != "" {
 		blocks := contentToBlocks(input.Content)
 		for _, block := range blocks {
@@ -171,7 +209,8 @@ func (c *Client) UpdatePost(ctx context.Context, pageID string, input models.Pos
 // ArchivePost archives a post
 func (c *Client) ArchivePost(ctx context.Context, pageID string) (*models.Post, error) {
 	req := &notionapi.PageUpdateRequest{
-		Archived: true,
+		Archived:   true,
+		Properties: notionapi.Properties{},
 	}
 
 	page, err := c.api.Page.Update(ctx, notionapi.PageID(pageID), req)
@@ -184,53 +223,48 @@ func (c *Client) ArchivePost(ctx context.Context, pageID string) (*models.Post, 
 
 // QueryOptions holds options for querying posts
 type QueryOptions struct {
-	Status    string
-	Platform  string
-	Sort      string
-	Order     string
-	Limit     int
+	Status        string
+	Pillar        string
+	DistributedTo string
+	Sort          string
+	Order         string
+	Limit         int
 }
 
 // QueryPosts queries posts from a database with filters
 func (c *Client) QueryPosts(ctx context.Context, databaseID string, opts QueryOptions) ([]models.Post, error) {
-	var filter notionapi.Filter
+	var filters []notionapi.Filter
 
-	// Build filters based on options
-	if opts.Status != "" && opts.Platform != "" {
-		// Both status and platform filters
-		filter = &notionapi.AndCompoundFilter{
-			notionapi.PropertyFilter{
-				Property: "Status",
-				Status: &notionapi.StatusFilterCondition{
-					Equals: opts.Status,
-				},
-			},
-			notionapi.PropertyFilter{
-				Property: "Platforms",
-				MultiSelect: &notionapi.MultiSelectFilterCondition{
-					Contains: opts.Platform,
-				},
-			},
-		}
-	} else if opts.Status != "" {
-		// Only status filter
-		filter = notionapi.PropertyFilter{
+	if opts.Status != "" {
+		filters = append(filters, notionapi.PropertyFilter{
 			Property: "Status",
-			Status: &notionapi.StatusFilterCondition{
-				Equals: opts.Status,
-			},
-		}
-	} else if opts.Platform != "" {
-		// Only platform filter
-		filter = notionapi.PropertyFilter{
-			Property: "Platforms",
-			MultiSelect: &notionapi.MultiSelectFilterCondition{
-				Contains: opts.Platform,
-			},
-		}
+			Status:   &notionapi.StatusFilterCondition{Equals: opts.Status},
+		})
+	}
+	if opts.Pillar != "" {
+		filters = append(filters, notionapi.PropertyFilter{
+			Property: "Pillar",
+			Select:   &notionapi.SelectFilterCondition{Equals: opts.Pillar},
+		})
+	}
+	if opts.DistributedTo != "" {
+		filters = append(filters, notionapi.PropertyFilter{
+			Property:    "Distributed To",
+			MultiSelect: &notionapi.MultiSelectFilterCondition{Contains: opts.DistributedTo},
+		})
 	}
 
-	// Set up sorting
+	var filter notionapi.Filter
+	switch len(filters) {
+	case 0:
+		// no filter
+	case 1:
+		filter = filters[0]
+	default:
+		compound := notionapi.AndCompoundFilter(filters)
+		filter = &compound
+	}
+
 	sortField := opts.Sort
 	if sortField == "" {
 		sortField = "created_time"
@@ -241,13 +275,9 @@ func (c *Client) QueryPosts(ctx context.Context, databaseID string, opts QueryOp
 	}
 
 	sorts := []notionapi.SortObject{
-		{
-			Timestamp: notionapi.TimestampType(sortField),
-			Direction: sortOrder,
-		},
+		{Timestamp: notionapi.TimestampType(sortField), Direction: sortOrder},
 	}
 
-	// Query with pagination
 	var allPosts []models.Post
 	var cursor *string
 	limit := opts.Limit
@@ -257,15 +287,14 @@ func (c *Client) QueryPosts(ctx context.Context, databaseID string, opts QueryOp
 
 	for {
 		pageSize := 100
-		remaining := limit - len(allPosts)
-		if remaining < pageSize {
+		if remaining := limit - len(allPosts); remaining < pageSize {
 			pageSize = remaining
 		}
 
 		req := &notionapi.DatabaseQueryRequest{
-			Filter:    filter,
-			Sorts:     sorts,
-			PageSize:  pageSize,
+			Filter:   filter,
+			Sorts:    sorts,
+			PageSize: pageSize,
 		}
 
 		if cursor != nil {
@@ -304,38 +333,59 @@ func (c *Client) pageToPost(ctx context.Context, page *notionapi.Page) (*models.
 		UpdatedAt: page.LastEditedTime.String(),
 	}
 
-	// Extract title
-	if titleProp, ok := page.Properties["Name"].(*notionapi.TitleProperty); ok {
-		if len(titleProp.Title) > 0 {
-			post.Title = titleProp.Title[0].PlainText
+	if prop, ok := page.Properties["Title"].(*notionapi.TitleProperty); ok && len(prop.Title) > 0 {
+		post.Title = prop.Title[0].PlainText
+	}
+	if prop, ok := page.Properties["Status"].(*notionapi.StatusProperty); ok {
+		post.Status = prop.Status.Name
+	}
+	if prop, ok := page.Properties["Week"].(*notionapi.NumberProperty); ok {
+		post.Week = int(prop.Number)
+	}
+	if prop, ok := page.Properties["Pillar"].(*notionapi.SelectProperty); ok {
+		post.Pillar = prop.Select.Name
+	}
+	if prop, ok := page.Properties["Publish Date"].(*notionapi.DateProperty); ok && prop.Date != nil && prop.Date.Start != nil {
+		post.PublishDate = prop.Date.Start.String()
+	}
+	if prop, ok := page.Properties["Published Date"].(*notionapi.DateProperty); ok && prop.Date != nil && prop.Date.Start != nil {
+		post.PublishedDate = prop.Date.Start.String()
+	}
+	if prop, ok := page.Properties["Blog URL"].(*notionapi.URLProperty); ok {
+		post.BlogURL = prop.URL
+	}
+	if prop, ok := page.Properties["Distributed To"].(*notionapi.MultiSelectProperty); ok {
+		vals := make([]string, 0, len(prop.MultiSelect))
+		for _, opt := range prop.MultiSelect {
+			vals = append(vals, opt.Name)
 		}
+		post.DistributedTo = vals
 	}
-
-	// Extract status
-	if statusProp, ok := page.Properties["Status"].(*notionapi.StatusProperty); ok {
-		post.Status = statusProp.Status.Name
+	if prop, ok := page.Properties["Distributed Date"].(*notionapi.DateProperty); ok && prop.Date != nil && prop.Date.Start != nil {
+		post.DistributedDate = prop.Date.Start.String()
 	}
-
-	// Extract platforms
-	if platformsProp, ok := page.Properties["Platforms"].(*notionapi.MultiSelectProperty); ok {
-		platforms := make([]string, 0, len(platformsProp.MultiSelect))
-		for _, opt := range platformsProp.MultiSelect {
-			platforms = append(platforms, opt.Name)
+	if prop, ok := page.Properties["LinkedIn Draft"].(*notionapi.RichTextProperty); ok && len(prop.RichText) > 0 {
+		post.LinkedInDraft = prop.RichText[0].PlainText
+	}
+	if prop, ok := page.Properties["Twitter Thread"].(*notionapi.RichTextProperty); ok && len(prop.RichText) > 0 {
+		post.TwitterThread = prop.RichText[0].PlainText
+	}
+	if prop, ok := page.Properties["HN Title"].(*notionapi.RichTextProperty); ok && len(prop.RichText) > 0 {
+		post.HNTitle = prop.RichText[0].PlainText
+	}
+	if prop, ok := page.Properties["Reddit Title"].(*notionapi.RichTextProperty); ok && len(prop.RichText) > 0 {
+		post.RedditTitle = prop.RichText[0].PlainText
+	}
+	if prop, ok := page.Properties["Hashtags"].(*notionapi.MultiSelectProperty); ok {
+		vals := make([]string, 0, len(prop.MultiSelect))
+		for _, opt := range prop.MultiSelect {
+			vals = append(vals, opt.Name)
 		}
-		post.Platforms = platforms
+		post.Hashtags = vals
 	}
 
-	// Extract publish date
-	if dateProp, ok := page.Properties["Publish Date"].(*notionapi.DateProperty); ok {
-		if dateProp.Date != nil && dateProp.Date.Start != nil {
-			post.PublishDate = dateProp.Date.Start.String()
-		}
-	}
-
-	// Get content from blocks
 	content, err := c.GetPageContent(ctx, string(page.ID))
 	if err != nil {
-		// Don't fail the whole operation if content fetch fails
 		post.Content = ""
 	} else {
 		post.Content = content

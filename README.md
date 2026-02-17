@@ -68,28 +68,41 @@ go build -o notion-cli .
 ./notion-cli config init
 
 # Create a post
-./notion-cli posts create \
-  --title "My Post" \
-  --status "Draft" \
-  --platform "Blog"
+notion-cli posts create \
+  --title "Introducing s9s: a terminal UI for SLURM" \
+  --status "Outline" \
+  --pillar "SLURM & HPC" \
+  --week 1
 
 # Query posts
-./notion-cli posts query --status "Draft"
+notion-cli posts query --status "Draft"
 
-# Update status
-./notion-cli posts update --id "POST_ID" --status "Ready"
+# Advance through pipeline
+notion-cli posts update --id "POST_ID" --status "Published" \
+  --published-date "2026-02-24" \
+  --blog-url "https://jontk.com/blog/..."
 ```
 
 ## My Database Schema
 
-This CLI expects a Notion database with these properties:
+This CLI is built around a specific content pipeline schema:
 
 | Property | Type | Description |
 |----------|------|-------------|
-| Name | Title | Post title |
-| Status | Status | Draft, Ready, Published |
-| Platforms | Multi-select | Blog, Twitter, LinkedIn, etc. |
-| Publish Date | Date | Scheduled publish date |
+| Title | Title | Post title |
+| Status | Status | Idea, Outline, Draft, Review, Published, Distributed |
+| Pillar | Select | SLURM & HPC, Go Tools, Infrastructure, Career & AI |
+| Week | Number | Week number in the content calendar |
+| Due Date | Date | Target publish date |
+| Published Date | Date | Actual publish date |
+| Blog URL | URL | Published post URL |
+| Distributed To | Multi-select | LinkedIn, Twitter, Dev.to, Hacker News, Reddit |
+| Distributed Date | Date | Date distributed to platforms |
+| LinkedIn Draft | Text | LinkedIn post copy |
+| Twitter Thread | Text | Twitter thread copy |
+| HN Title | Text | Hacker News submission title |
+| Reddit Title | Text | Reddit submission title |
+| Hashtags | Multi-select | Post hashtags |
 
 **You can adapt this to your schema** by modifying `internal/notion/pages.go`.
 
@@ -99,20 +112,36 @@ This CLI expects a Notion database with these properties:
 
 ```bash
 # Create a post
-notion-cli posts create --title "Title" --status "Draft"
+notion-cli posts create --title "My Post" --status "Idea"
+
+# Create with full details
+notion-cli posts create \
+  --title "Introducing s9s" \
+  --status "Outline" \
+  --pillar "SLURM & HPC" \
+  --week 1 \
+  --due-date "2026-02-24"
 
 # Create from stdin (AI workflow)
-echo '{"title":"AI Post","content":"..."}' | notion-cli posts create --stdin
+echo '{"title":"AI Post","status":"Draft","pillar":"Go Tools"}' | \
+  notion-cli posts create --stdin
 
 # Query posts
-notion-cli posts query --status "Ready"
-notion-cli posts query --platform "Twitter" --limit 10
+notion-cli posts query --status "Draft"
+notion-cli posts query --pillar "Go Tools" --limit 10
+notion-cli posts query --distributed-to "LinkedIn"
 
 # Get a specific post
 notion-cli posts get --id "PAGE_ID"
 
-# Update a post
-notion-cli posts update --id "PAGE_ID" --status "Published"
+# Advance through the pipeline
+notion-cli posts update --id "PAGE_ID" --status "Draft"
+notion-cli posts update --id "PAGE_ID" --status "Published" \
+  --published-date "2026-02-24" \
+  --blog-url "https://jontk.com/blog/..."
+notion-cli posts update --id "PAGE_ID" --status "Distributed" \
+  --distributed-to "LinkedIn,Twitter,Dev.to" \
+  --distributed-date "2026-02-25"
 
 # Archive a post
 notion-cli posts archive --id "PAGE_ID"

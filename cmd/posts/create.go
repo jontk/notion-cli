@@ -15,31 +15,34 @@ import (
 )
 
 var (
-	createTitle       string
-	createContent     string
-	createStatus      string
-	createPlatforms   []string
-	createDate        string
-	createStdin       bool
+	createTitle         string
+	createContent       string
+	createStatus        string
+	createWeek          int
+	createPillar        string
+	createDueDate       string
+	createDistributedTo []string
+	createHashtags      []string
+	createStdin         bool
 )
 
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a new post",
-	Long: `Create a new post in your Notion database with the specified properties.`,
-	Example: `  # Create a simple draft post
-  notion-cli posts create --title "My First Post"
+	Long:  `Create a new post in your Notion content pipeline database.`,
+	Example: `  # Create a draft post
+  notion-cli posts create --title "Introducing s9s: a terminal UI for SLURM"
 
-  # Create with all fields
+  # Create with full details
   notion-cli posts create \
-    --title "Blog Post About Go" \
-    --content "Go is a great language for CLI tools..." \
-    --status "Ready" \
-    --platform "Twitter,LinkedIn,Blog" \
-    --date "2024-03-20"
+    --title "Introducing s9s" \
+    --status "Outline" \
+    --pillar "SLURM & HPC" \
+    --week 1 \
+    --due-date "2026-02-24"
 
-  # Create from stdin (useful for AI-generated content)
-  echo '{"title":"AI Post","content":"Generated content..."}' | \
+  # Create from stdin (AI workflow)
+  echo '{"title":"AI Post","status":"Draft","pillar":"Go Tools","week":2}' | \
     notion-cli posts create --stdin`,
 	RunE: func(cobraCmd *cobra.Command, args []string) error {
 		cfg := cmd.GetConfig()
@@ -49,7 +52,6 @@ var createCmd = &cobra.Command{
 		var input models.PostInput
 
 		if createStdin {
-			// Read JSON from stdin
 			data, err := io.ReadAll(os.Stdin)
 			if err != nil {
 				return output.Error(fmt.Errorf("failed to read stdin: %w", err))
@@ -58,26 +60,25 @@ var createCmd = &cobra.Command{
 				return output.Error(fmt.Errorf("failed to parse JSON: %w", err))
 			}
 		} else {
-			// Use flags
 			if createTitle == "" {
 				return output.Error(fmt.Errorf("title is required"))
 			}
-
 			input = models.PostInput{
-				Title:       createTitle,
-				Content:     createContent,
-				Status:      createStatus,
-				Platforms:   createPlatforms,
-				PublishDate: createDate,
+				Title:         createTitle,
+				Content:       createContent,
+				Status:        createStatus,
+				Week:          createWeek,
+				Pillar:        createPillar,
+				PublishDate:   createDueDate,
+				DistributedTo: createDistributedTo,
+				Hashtags:      createHashtags,
 			}
 		}
 
-		// Set default status if not provided
 		if input.Status == "" {
 			input.Status = cfg.DefaultStatus
 		}
 
-		// Validate database ID
 		if cfg.DatabaseID == "" {
 			return output.Error(fmt.Errorf("database ID is required. Set NOTION_DATABASE_ID or run 'notion-cli config init'"))
 		}
@@ -96,8 +97,11 @@ func init() {
 
 	createCmd.Flags().StringVar(&createTitle, "title", "", "Post title (required unless using --stdin)")
 	createCmd.Flags().StringVar(&createContent, "content", "", "Post content (markdown supported)")
-	createCmd.Flags().StringVar(&createStatus, "status", "", "Post status - use 'databases schema' to see valid values (default: Draft)")
-	createCmd.Flags().StringSliceVar(&createPlatforms, "platform", []string{}, "Platform(s) - comma-separated (e.g., Twitter,LinkedIn,Blog)")
-	createCmd.Flags().StringVar(&createDate, "date", "", "Publish date in YYYY-MM-DD format (e.g., 2024-03-20)")
+	createCmd.Flags().StringVar(&createStatus, "status", "", "Status: Idea, Outline, Draft, Review, Published, Distributed (default: Draft)")
+	createCmd.Flags().IntVar(&createWeek, "week", 0, "Week number in the content calendar (1-12)")
+	createCmd.Flags().StringVar(&createPillar, "pillar", "", "Content pillar: 'SLURM & HPC', 'Go Tools', 'Infrastructure', 'Career & AI'")
+	createCmd.Flags().StringVar(&createDueDate, "due-date", "", "Target publish date in YYYY-MM-DD format")
+	createCmd.Flags().StringSliceVar(&createDistributedTo, "distributed-to", []string{}, "Platforms distributed to: LinkedIn,Twitter,Dev.to,Hacker News,Reddit")
+	createCmd.Flags().StringSliceVar(&createHashtags, "hashtags", []string{}, "Hashtags (comma-separated)")
 	createCmd.Flags().BoolVar(&createStdin, "stdin", false, "Read PostInput JSON from stdin (for AI/automation workflows)")
 }
