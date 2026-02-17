@@ -7,21 +7,35 @@ import (
 )
 
 type Config struct {
-	APIToken      string
-	DatabaseID    string
-	DefaultStatus string
+	APIToken           string
+	DatabaseID         string
+	TasksDatabaseID    string
+	EventsDatabaseID   string
+	DefaultStatus      string
+	DefaultTaskStatus  string
+	DefaultPriority    string
 }
 
 func Load() (*Config, error) {
 	cfg := &Config{
-		APIToken:      viper.GetString("api_token"),
-		DatabaseID:    viper.GetString("database_id"),
-		DefaultStatus: viper.GetString("default_status"),
+		APIToken:          viper.GetString("api_token"),
+		DatabaseID:        viper.GetString("database_id"),
+		TasksDatabaseID:   viper.GetString("tasks_database_id"),
+		EventsDatabaseID:  viper.GetString("events_database_id"),
+		DefaultStatus:     viper.GetString("default_status"),
+		DefaultTaskStatus: viper.GetString("default_task_status"),
+		DefaultPriority:   viper.GetString("default_priority"),
 	}
 
-	// Set default status if not configured
+	// Set defaults if not configured
 	if cfg.DefaultStatus == "" {
 		cfg.DefaultStatus = "Draft"
+	}
+	if cfg.DefaultTaskStatus == "" {
+		cfg.DefaultTaskStatus = "Todo"
+	}
+	if cfg.DefaultPriority == "" {
+		cfg.DefaultPriority = "Medium"
 	}
 
 	// Validate required fields

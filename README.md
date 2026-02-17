@@ -1,36 +1,54 @@
 # notion-cli
 
-A command-line tool for managing content in Notion databases.
+A command-line tool for managing content, tasks, and calendar events in Notion databases.
 
-> **Note:** This was built for my personal content publishing workflow. It's opinionated and designed around a specific database schema. However, the patterns and architecture are reusable if you're building something similar.
+> **Note:** This was built for my personal content publishing workflow and productivity system. It's opinionated and designed around specific database schemas. However, the patterns and architecture are reusable if you're building something similar.
 
 ## What This Does
 
-Programmatically manage posts in a Notion database:
+Programmatically manage your Notion workspace from the command line:
+
+**Content Management:**
 - ✅ Create posts from CLI or stdin (for AI workflows)
 - ✅ Query posts by status, platform, or date
 - ✅ Update post properties
 - ✅ Archive old content
+
+**Task Management:**
+- ✅ Create and manage TODOs and tasks
+- ✅ Query tasks by status, priority, or category
+- ✅ View today's tasks and overdue items
+- ✅ Mark tasks as complete
+
+**Calendar/Events:**
+- ✅ Create and manage calendar events
+- ✅ View today's schedule and weekly events
+- ✅ Update event details and status
+- ✅ Cancel events
+
+**Database Operations:**
 - ✅ List databases and inspect schemas
+- ✅ Support for multiple databases
 
 ## Why I Built This
 
-I wanted to manage my content publishing pipeline programmatically:
+I wanted to manage my content publishing pipeline and personal productivity system programmatically:
 
 ```
-Content Idea → Notion (Draft)
-  ↓
-Write Article
-  ↓
-Notion (Ready) → n8n automation
+Content Idea → Notion (Draft)              Task Created → Notion (Todo)
+  ↓                                          ↓
+Write Article                               Work on Task
+  ↓                                          ↓
+Notion (Ready) → n8n automation            Notion (Done)
   ↓
 Publish to platforms → Notion (Published)
 ```
 
 Notion has a great UI, but I needed:
 - **CLI access** for scripting and automation
-- **AI integration** (Claude can manage the entire pipeline)
-- **n8n workflows** that query and update posts
+- **AI integration** (Claude can manage tasks, calendar, and content)
+- **n8n workflows** that query and update posts/tasks/events
+- **Personal assistant** - "Claude, what's on my calendar today?"
 - **Version control** for my content strategy
 
 ## Installation
@@ -111,6 +129,64 @@ notion-cli databases schema
 notion-cli databases schema --id "DATABASE_ID"
 ```
 
+### Tasks
+
+```bash
+# Create a task
+notion-cli tasks create --title "Buy milk" --priority "High"
+
+# Create from stdin (AI workflow)
+echo '{"title":"Call dentist","category":"Personal"}' | notion-cli tasks create --stdin
+
+# Query tasks
+notion-cli tasks query --status "Todo"
+notion-cli tasks query --priority "High" --category "Work"
+
+# Get a specific task
+notion-cli tasks get --id "TASK_ID"
+
+# Update a task
+notion-cli tasks update --id "TASK_ID" --status "In Progress"
+
+# Mark as complete
+notion-cli tasks complete --id "TASK_ID"
+
+# View today's tasks
+notion-cli tasks today
+
+# View overdue tasks
+notion-cli tasks overdue
+```
+
+### Events
+
+```bash
+# Create an event
+notion-cli events create --title "Team Meeting" --date "2024-03-20 14:00"
+
+# Create from stdin
+echo '{"title":"Doctor Appointment","date":"2024-03-25 09:30"}' | notion-cli events create --stdin
+
+# Query events
+notion-cli events query --type "Work"
+notion-cli events query --status "Scheduled"
+
+# Get a specific event
+notion-cli events get --id "EVENT_ID"
+
+# Update an event
+notion-cli events update --id "EVENT_ID" --location "Conference Room B"
+
+# Cancel an event
+notion-cli events cancel --id "EVENT_ID"
+
+# View today's schedule
+notion-cli events today
+
+# View this week's events
+notion-cli events week
+```
+
 ### Config
 
 ```bash
@@ -127,15 +203,26 @@ Config is stored in `~/.notion-cli.yaml`:
 
 ```yaml
 api_token: "secret_YOUR_TOKEN_HERE"
-database_id: "your-database-id"
+database_id: "your-posts-database-id"
+tasks_database_id: "your-tasks-database-id"
+events_database_id: "your-events-database-id"
 default_status: "Draft"
+default_task_status: "Todo"
+default_priority: "Medium"
 ```
 
 Or use environment variables:
 ```bash
 export NOTION_API_TOKEN="secret_..."
 export NOTION_DATABASE_ID="..."
+export NOTION_TASKS_DATABASE_ID="..."
+export NOTION_EVENTS_DATABASE_ID="..."
 ```
+
+**Setup Guides:**
+- [Posts Setup](docs/POSTS_SETUP.md) - Content management
+- [Tasks Setup](docs/TASKS_SETUP.md) - TODO tracking
+- [Events Setup](docs/EVENTS_SETUP.md) - Calendar management
 
 ## Integration Examples
 
@@ -153,17 +240,40 @@ for (const post of postsArray) {
 }
 ```
 
-### Claude Code
+### Claude Code / AI Assistant
 
-Claude can manage your content pipeline:
+Claude can manage your entire workflow:
 
 ```bash
+# Content Management
 # User: "Create a post idea about Go CLI tools"
 # Claude runs:
 notion-cli posts create \
   --title "Building CLI Tools in Go" \
   --content "Brief outline..." \
   --status "Draft"
+
+# Task Management
+# User: "Add a task to review the PR tomorrow"
+# Claude runs:
+notion-cli tasks create \
+  --title "Review PR #123" \
+  --due "2024-03-20" \
+  --priority "High" \
+  --category "Work"
+
+# Calendar Management
+# User: "Schedule a meeting with John on Friday at 2pm"
+# Claude runs:
+notion-cli events create \
+  --title "Meeting with John" \
+  --date "2024-03-22 14:00" \
+  --type "Work"
+
+# User: "What's on my schedule today?"
+# Claude runs:
+notion-cli events today
+notion-cli tasks today
 ```
 
 ### Bash Script
@@ -189,11 +299,13 @@ done
 notion-cli/
 ├── cmd/                    # Cobra commands
 │   ├── posts/             # Post CRUD commands
+│   ├── tasks/             # Task management commands
+│   ├── events/            # Calendar/event commands
 │   ├── databases/         # Database inspection
 │   └── config/            # Configuration
 ├── internal/
 │   ├── config/            # Config loading
-│   ├── models/            # Domain models
+│   ├── models/            # Domain models (Post, Task, Event)
 │   ├── notion/            # Notion API wrapper
 │   └── output/            # JSON/table formatting
 └── main.go
@@ -214,8 +326,6 @@ This CLI was designed to be easy for AI assistants (like Claude) to use:
 ✅ **stdin support** - Pipe AI-generated content
 ✅ **Consistent structure** - Predictable behavior
 
-See [docs/CLI_UX_ANALYSIS.md](docs/CLI_UX_ANALYSIS.md) for the full UX analysis.
-
 ## Extending for Your Workflow
 
 ### Different Database Schema
@@ -232,24 +342,26 @@ Want to manage "projects" or "notes" instead of posts?
 2. Create `internal/models/project.go`
 3. Add commands to root in `main.go`
 
-See [docs/DOCS_DATABASE_SETUP.md](docs/DOCS_DATABASE_SETUP.md) for examples.
-
 ## Documentation
 
-- [N8N Integration Guide](docs/N8N_INTEGRATION.md) - Automation workflows
-- [Integration Setup](docs/INTEGRATION_SETUP.md) - Content pipeline setup
-- [CLI UX Analysis](docs/CLI_UX_ANALYSIS.md) - Design decisions
-- [Implementation Checklist](docs/IMPLEMENTATION_CHECKLIST.md) - Build notes
+### Setup Guides
+- [Posts Setup](docs/POSTS_SETUP.md) - Content publishing workflow
+- [Tasks Setup](docs/TASKS_SETUP.md) - Task and TODO management
+- [Events Setup](docs/EVENTS_SETUP.md) - Calendar and event management
+
+**Note**: For AI assistant integration with Claude, see the "Workflow 4: Claude AI Assistant" sections in each setup guide.
 
 ## Use Cases
 
 This tool works well for:
 
 ✅ **Content creators** managing a publishing calendar
-✅ **AI-assisted workflows** (Claude, GPT, etc.)
+✅ **Personal productivity** - tasks, TODOs, and calendar management
+✅ **AI-assisted workflows** (Claude as your personal assistant)
 ✅ **Automation** (n8n, Zapier, custom scripts)
 ✅ **Multi-platform publishing** (blog, social media)
 ✅ **Team workflows** with status tracking
+✅ **CLI-first workflows** - manage everything from the terminal
 
 It's probably **not** a good fit if:
 - ❌ You need a generic Notion client (use the API directly)
