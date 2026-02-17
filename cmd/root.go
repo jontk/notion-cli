@@ -14,15 +14,15 @@ var (
 	cfgFile      string
 	outputFormat string
 	cfg          *config.Config
-	version      = "0.1.0"
+	version      = "0.2.0"
 )
 
 var RootCmd = &cobra.Command{
 	Use:     "notion-cli",
-	Short:   "A CLI tool for managing Notion content",
+	Short:   "A CLI tool for managing Notion content, tasks, and events",
 	Version: version,
-	Long: `notion-cli is a command-line interface for managing content in Notion databases.
-It provides an easy way to create, read, update, and archive posts and pages.`,
+	Long: `notion-cli is a command-line interface for managing content, tasks, and events in Notion databases.
+It provides an easy way to create, read, update, and organize posts, tasks, and calendar events.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		if err := initConfig(); err != nil {
 			return err
