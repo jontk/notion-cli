@@ -408,7 +408,7 @@ MIT
 
 **Jon Thor Kristinsson**
 
-- Blog: [jontk.is](https://jontk.com) (coming soon)
+- Blog: [jontk.com](https://jontk.com)
 - GitHub: [@jontk](https://github.com/jontk)
 - Projects: [s9s](https://github.com/jontk/s9s), [slurm-client](https://github.com/jontk/slurm-client)
 
